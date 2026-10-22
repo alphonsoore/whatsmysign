@@ -3,28 +3,57 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
 <title>Selector</title>
 <style>
+@font-face{font-family:'AppFont';src:url('font.otf') format('opentype');font-weight:normal;font-style:normal}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
-html,body{width:100%;height:100%;background:#fff;overflow:hidden;touch-action:manipulation}
+html,body{font-family:'AppFont',system-ui,Arial,sans-serif;width:100%;height:100%;background:#fff;overflow:hidden;touch-action:manipulation}
 #stage{position:absolute;left:50%;top:50%;aspect-ratio:1.3694;width:min(100vw,calc(100vh * 1.3694));transform:translate(-50%,-50%)}
 #map{width:100%;height:100%;display:block;pointer-events:none}
 .hs{position:absolute;background:transparent;border:0;cursor:pointer}
-#view{position:fixed;inset:0;background:rgba(255,255,255,.7);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;cursor:pointer;z-index:5}
-#view img{width:90vw;height:90vh;object-fit:contain;pointer-events:none}
+.col{position:fixed;top:0;bottom:0;display:flex;flex-direction:column;justify-content:space-evenly;align-items:center;padding:1.5vh 0;z-index:2}
+#cl{left:max(0px,calc(50vw - min(100vw,137vh)/2 - 12.5vh))}#cr{right:max(0px,calc(50vw - min(100vw,137vh)/2 - 12.5vh))}
+.col{width:12vh}
+.c{transform:translateX(-2.5vh)}
+#cr .c{transform:translateX(2.5vh)}
+.c{width:6vh;height:6vh;border-radius:50%;border:.4vh solid #222;background:#fff;color:#000;font:normal 3.6vh/1 'AppFont',system-ui,Arial,sans-serif;display:flex;align-items:center;justify-content:center;cursor:pointer;padding-bottom:.3vh}
+.c.b{background:#1e63ff;border-color:#1e63ff;color:#fff}
+.c.r{background:#e8222b;border-color:#e8222b;color:#fff}
+.c:nth-child(even){transform:translateX(2.5vh)}
+#cr .c:nth-child(even){transform:translateX(-2.5vh)}
+#clr{position:fixed;left:50%;bottom:1.5vh;transform:translateX(-50%);width:7vh;height:7vh;border-radius:50%;border:.4vh solid #222;background:#fff;font-size:4vh;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2}
+#view{position:fixed;inset:0;flex-direction:column;gap:2vh;background:rgba(255,255,255,.7);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;cursor:pointer;z-index:5}
+#view img{width:90vw;height:76vh;object-fit:contain;pointer-events:none}
+#cap{background:#fff;color:#000;font:normal 7vh/1 'AppFont',system-ui,Arial,sans-serif;padding:1.2vh 4vw;text-align:center;pointer-events:none;max-width:90vw}
+#cap i{font-style:normal;color:#aaa}
 #start{position:fixed;inset:0;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:10}
 #start svg{width:min(40vw,40vh);height:min(40vw,40vh)}
 </style></head><body>
 <div id="stage"><img id="map" src="map.png" alt="" draggable="false"></div>
-<div id="view"><img id="big" alt="" draggable="false"></div>
+<div class="col" id="cl"></div><div class="col" id="cr"></div>
+<div id="clr" aria-label="Clear all">🧹</div>
+<div id="view"><img id="big" alt="" draggable="false"><div id="cap"></div></div>
 <div id="start"><svg viewBox="0 0 100 100"><path d="M25 10 L90 50 L25 90 Z" fill="#111"/></svg></div>
 <script>
+var T={bakery:'Bakery',bookstore:'Bookstore',busstop:'Bus Stop',closed:'CLOSED',coffeeshop:'Coffee Shop',cor:'<i>POP</i>COR<i>N</i>',down:'DOWN',flowers:'Flowers',game:'Game',gasstation:'GAS STATION',h:'H<i>ELICOPTER</i>',hospital:'HOSPITAL',icecream:'ICE CREAM',juice:'juice',kobanpolice:'KOBAN Police',library:'Library',menu:'MENU',news:'NEWS',off:'OFF',on:'ON',oneway:'ONE WAY',open:'OPEN',p:'P<i>ARKING</i>',popcorn:'Popcorn',post:'POST',restaurant:'Restaurant',sale:'Sale',school:'School',station:'Station',stop:'STOP',supermarket:'Supermarket',taxi:'TAXI',telephone:'Telephone',up:'UP'};
 var H=[["up",57.47,24.98,4.91,5],["telephone",84.84,71.55,10.36,5],["taxi",36.53,43.38,7.11,5],["supermarket",14.61,31.49,13.08,5],["stop",63.6,65.83,8.16,5.28],["station",85.41,12.34,9.96,5],["school",25.04,81.13,8.9,5],["sale",22.82,40.1,5.15,5],["restaurant",75.68,49.52,12.35,5],["post",52.34,53.08,4.71,5],["cor",41.01,63.73,4.5,5],["popcorn",34.83,50.4,8.16,5],["p",39.17,30.55,5.07,6.21],["open",80.66,66.72,6.36,5],["oneway",41.71,35.57,7.21,5],["on",1.69,24.56,4.8,6.57],["off",8.86,24.56,4.8,6.57],["news",51.86,20.83,7.21,5],["menu",76.09,62.05,4.5,5],["library",37.14,82.06,7.84,5],["kobanpolice",56.77,45.23,8.62,5.38],["juice",16.4,62.47,7.05,5],["icecream",24.74,63.01,8.14,5],["hospital",3.67,80.01,10.94,5],["h",2.83,69.7,7.74,5.12],["gasstation",63.27,13.57,9.96,5],["game",4.22,32.9,7.06,5],["flowers",73.23,39.72,8.62,5.38],["down",57.47,30.5,4.91,5],["coffeeshop",86.44,34.6,7.58,7.17],["closed",76.61,58.1,7.02,5],["busstop",12.42,37.3,4.82,5.09],["bookstore",28.55,32.29,7.84,6.21],["bakery",84.34,57.98,6.36,5.83]];
 var stage=document.getElementById('stage'),view=document.getElementById('view'),big=document.getElementById('big'),start=document.getElementById('start');
 H.forEach(function(h){
   var b=document.createElement('button');b.className='hs';b.setAttribute('aria-label',h[0]);
   b.style.left=h[1]+'%';b.style.top=h[2]+'%';b.style.width=h[3]+'%';b.style.height=h[4]+'%';
-  b.addEventListener('click',function(){big.src=h[0]+'.png';view.style.display='flex'});
+  b.addEventListener('click',function(){big.src=h[0]+'.png';document.getElementById('cap').innerHTML=T[h[0]];view.style.display='flex'});
   stage.appendChild(b);
   new Image().src=h[0]+'.png';
+});
+'abcdefghijklmnopqrstuvwxyz'.split('').forEach(function(l,i){
+  var c=document.createElement('div');c.className='c';c.textContent=l;
+  c.addEventListener('click',function(){
+    if(c.classList.contains('b')){c.classList.remove('b');c.classList.add('r')}
+    else if(c.classList.contains('r')){c.classList.remove('r')}
+    else{c.classList.add('b')}
+  });
+  document.getElementById(i<13?'cl':'cr').appendChild(c);
+});
+document.getElementById('clr').addEventListener('click',function(){
+  document.querySelectorAll('.c').forEach(function(c){c.classList.remove('b','r')});
 });
 view.addEventListener('click',function(){view.style.display='none';big.removeAttribute('src')});
 start.addEventListener('click',function(){
